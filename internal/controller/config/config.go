@@ -24,17 +24,17 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/crossplane/provider-pocketid/apis/v1alpha1"
+	apisv1alpha1 "github.com/crossplane/provider-pocketid/apis/v1alpha1"
 )
 
 // Setup adds a controller that reconciles ProviderConfigs by accounting for
 // their current usage.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind)
+	name := providerconfig.ControllerName(apisv1alpha1.ProviderConfigGroupKind)
 
 	of := resource.ProviderConfigKinds{
-		Config:    v1alpha1.ProviderConfigGroupVersionKind,
-		UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
+		Config:    apisv1alpha1.ProviderConfigGroupVersionKind,
+		UsageList: apisv1alpha1.ProviderConfigUsageListGroupVersionKind,
 	}
 
 	r := providerconfig.NewReconciler(mgr, of,
@@ -44,7 +44,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
-		For(&v1alpha1.ProviderConfig{}).
-		Watches(&v1alpha1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
+		For(&apisv1alpha1.ProviderConfig{}).
+		Watches(&apisv1alpha1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }

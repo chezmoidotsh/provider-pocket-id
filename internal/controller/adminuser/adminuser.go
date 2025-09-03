@@ -35,7 +35,6 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/pkg/statemetrics"
 
-	"github.com/crossplane/provider-pocketid/apis/openid/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-pocketid/apis/v1alpha1"
 	"github.com/crossplane/provider-pocketid/internal/features"
 )
@@ -58,7 +57,7 @@ var (
 
 // Setup adds a controller that reconciles AdminUser managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(v1alpha1.AdminUserGroupKind)
+	name := managed.ControllerName(apisv1alpha1.AdminUserGroupKind)
 
 	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
 	if o.Features.Enabled(features.EnableAlphaExternalSecretStores) {
@@ -87,20 +86,20 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 
 	if o.MetricOptions != nil && o.MetricOptions.MRStateMetrics != nil {
 		stateMetricsRecorder := statemetrics.NewMRStateRecorder(
-			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &v1alpha1.AdminUserList{}, o.MetricOptions.PollStateMetricInterval,
+			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &apisv1alpha1.AdminUserList{}, o.MetricOptions.PollStateMetricInterval,
 		)
 		if err := mgr.Add(stateMetricsRecorder); err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.AdminUserList")
+			return errors.Wrap(err, "cannot register MR state metrics recorder for kind apisv1alpha1.AdminUserList")
 		}
 	}
 
-	r := managed.NewReconciler(mgr, resource.ManagedKind(v1alpha1.AdminUserGroupVersionKind), opts...)
+	r := managed.NewReconciler(mgr, resource.ManagedKind(apisv1alpha1.AdminUserGroupVersionKind), opts...)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&v1alpha1.AdminUser{}).
+		For(&apisv1alpha1.AdminUser{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -118,7 +117,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.AdminUser)
+	cr, ok := mg.(*apisv1alpha1.AdminUser)
 	if !ok {
 		return nil, errors.New(errNotAdminUser)
 	}
@@ -155,7 +154,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.AdminUser)
+	cr, ok := mg.(*apisv1alpha1.AdminUser)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotAdminUser)
 	}
@@ -181,7 +180,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.AdminUser)
+	cr, ok := mg.(*apisv1alpha1.AdminUser)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotAdminUser)
 	}
@@ -196,7 +195,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.AdminUser)
+	cr, ok := mg.(*apisv1alpha1.AdminUser)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotAdminUser)
 	}
@@ -211,7 +210,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.AdminUser)
+	cr, ok := mg.(*apisv1alpha1.AdminUser)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotAdminUser)
 	}

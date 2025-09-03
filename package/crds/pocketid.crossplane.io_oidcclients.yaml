@@ -4,18 +4,18 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
-  name: mytypes.sample.pocketid.crossplane.io
+  name: oidcclients.pocketid.crossplane.io
 spec:
-  group: sample.pocketid.crossplane.io
+  group: pocketid.crossplane.io
   names:
     categories:
       - crossplane
       - managed
       - pocketid
-    kind: MyType
-    listKind: MyTypeList
-    plural: mytypes
-    singular: mytype
+    kind: OIDCClient
+    listKind: OIDCClientList
+    plural: oidcclients
+    singular: oidcclient
   scope: Cluster
   versions:
     - additionalPrinterColumns:
@@ -25,16 +25,25 @@ spec:
         - jsonPath: .status.conditions[?(@.type=='Synced')].status
           name: SYNCED
           type: string
-        - jsonPath: .metadata.annotations.crossplane\.io/external-name
-          name: EXTERNAL-NAME
+        - jsonPath: .status.atProvider.name
+          name: CLIENT-NAME
           type: string
+        - jsonPath: .status.atProvider.isPublic
+          name: PUBLIC
+          type: boolean
+        - jsonPath: .status.atProvider.pkceEnabled
+          name: PKCE
+          type: boolean
         - jsonPath: .metadata.creationTimestamp
           name: AGE
           type: date
       name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: A MyType is an example API type.
+          description: |-
+            An OIDCClient represents an OIDC client application in Pocket ID.
+            OIDC clients are applications that can request authentication from Pocket ID
+            and receive user identity information through OpenID Connect protocols.
           properties:
             apiVersion:
               description: |-
@@ -54,7 +63,7 @@ spec:
             metadata:
               type: object
             spec:
-              description: A MyTypeSpec defines the desired state of a MyType.
+              description: An OIDCClientSpec defines the desired state of an OIDCClient.
               properties:
                 deletionPolicy:
                   default: Delete
@@ -71,12 +80,103 @@ spec:
                     - Delete
                   type: string
                 forProvider:
-                  description: MyTypeParameters are the configurable fields of a MyType.
+                  description:
+                    OIDCClientParameters are the configurable fields of an
+                    OIDCClient.
                   properties:
-                    configurableField:
+                    callbackURLs:
+                      description: |-
+                        CallbackURLs are the allowed redirect URIs after successful authentication.
+                        These must be exact matches for security purposes.
+                      items:
+                        type: string
+                      type: array
+                    credentials:
+                      description:
+                        Credentials configure federated client authentication
+                        methods.
+                      properties:
+                        federatedIdentities:
+                          description: |-
+                            FederatedIdentities configure JWT-based client authentication.
+                            This allows clients to authenticate using JWTs from trusted issuers.
+                          items:
+                            description:
+                              OIDCClientCredentialsFederatedIdentity are
+                              the configurable fields of an OIDCClient's federated identity
+                              credentials.
+                            properties:
+                              audience:
+                                description: |-
+                                  Audience must match the 'aud' claim in JWT tokens.
+                                  This verifies the intended recipient of the token.
+                                type: string
+                              issuer:
+                                description: |-
+                                  Issuer must match the 'iss' claim in JWT tokens from the external IdP.
+                                  This identifies the trusted token issuer.
+                                type: string
+                              jwks:
+                                description: |-
+                                  JWKS is the JSON Web Key Set URL for verifying JWT signatures.
+                                  If empty, defaults to <issuer>/.well-known/jwks.json
+                                type: string
+                              subject:
+                                description: |-
+                                  Subject must match the 'sub' claim in JWT tokens.
+                                  If empty, defaults to the OIDC client UUID.
+                                type: string
+                            required:
+                              - issuer
+                            type: object
+                          type: array
+                      type: object
+                    id:
+                      description:
+                        ID is the client identifier for OIDC. If not specified,
+                        a UUID will be generated.
                       type: string
+                    isPublic:
+                      description: |-
+                        IsPublic indicates whether this is a public client (cannot keep secrets secure).
+                        Public clients don't use client secrets and must use PKCE.
+                      type: boolean
+                    launchURL:
+                      description:
+                        LaunchURL is the application's main URL, used for
+                        display purposes.
+                      type: string
+                    logoUrl:
+                      description: |-
+                        LogoURL is the URL to an image file that will be used as the client's logo.
+                        The provider will download this image and upload it to Pocket ID.
+                        Supported formats: PNG, JPEG, GIF, SVG. Maximum size: 2MB.
+                      type: string
+                    logoutCallbackURLs:
+                      description:
+                        LogoutCallbackURLs are the allowed redirect URIs
+                        after logout.
+                      items:
+                        type: string
+                      type: array
+                    name:
+                      description: |-
+                        Name is the display name of the OIDC client application.
+                        This is shown to users during the authentication flow.
+                      type: string
+                    pkceEnabled:
+                      description: |-
+                        PkceEnabled indicates whether Proof Key for Code Exchange is required.
+                        This should be enabled for enhanced security, especially for public clients.
+                      type: boolean
+                    requiresReauthentication:
+                      description:
+                        RequiresReauthentication forces users to re-authenticate
+                        even if they have an active session.
+                      type: boolean
                   required:
-                    - configurableField
+                    - callbackURLs
+                    - name
                   type: object
                 managementPolicies:
                   default:
@@ -246,17 +346,98 @@ spec:
                 - forProvider
               type: object
             status:
-              description: A MyTypeStatus represents the observed state of a MyType.
+              description: An OIDCClientStatus represents the observed state of an OIDCClient.
               properties:
                 atProvider:
-                  description: MyTypeObservation are the observable fields of a MyType.
+                  description:
+                    OIDCClientObservation are the observable fields of an
+                    OIDCClient.
                   properties:
-                    configurableField:
+                    callbackURLs:
+                      description: CallbackURLs are the configured redirect URIs.
+                      items:
+                        type: string
+                      type: array
+                    credentials:
+                      description:
+                        Credentials contain the federated authentication
+                        configuration.
+                      properties:
+                        federatedIdentities:
+                          description: |-
+                            FederatedIdentities configure JWT-based client authentication.
+                            This allows clients to authenticate using JWTs from trusted issuers.
+                          items:
+                            description:
+                              OIDCClientCredentialsFederatedIdentity are
+                              the configurable fields of an OIDCClient's federated identity
+                              credentials.
+                            properties:
+                              audience:
+                                description: |-
+                                  Audience must match the 'aud' claim in JWT tokens.
+                                  This verifies the intended recipient of the token.
+                                type: string
+                              issuer:
+                                description: |-
+                                  Issuer must match the 'iss' claim in JWT tokens from the external IdP.
+                                  This identifies the trusted token issuer.
+                                type: string
+                              jwks:
+                                description: |-
+                                  JWKS is the JSON Web Key Set URL for verifying JWT signatures.
+                                  If empty, defaults to <issuer>/.well-known/jwks.json
+                                type: string
+                              subject:
+                                description: |-
+                                  Subject must match the 'sub' claim in JWT tokens.
+                                  If empty, defaults to the OIDC client UUID.
+                                type: string
+                            required:
+                              - issuer
+                            type: object
+                          type: array
+                      type: object
+                    hasLogo:
+                      description:
+                        HasLogo indicates whether a logo has been uploaded
+                        for this client.
+                      type: boolean
+                    id:
+                      description:
+                        ID is the unique identifier of the OIDC client in
+                        Pocket ID.
                       type: string
-                    observableField:
+                    isPublic:
+                      description: IsPublic indicates if this is a public client.
+                      type: boolean
+                    launchURL:
+                      description: LaunchURL is the application's main URL.
                       type: string
+                    logoUrl:
+                      description: LogoURL is the configured logo URL for this client.
+                      type: string
+                    logoutCallbackURLs:
+                      description:
+                        LogoutCallbackURLs are the configured logout redirect
+                        URIs.
+                      items:
+                        type: string
+                      type: array
+                    name:
+                      description: Name is the display name of the OIDC client application.
+                      type: string
+                    pkceEnabled:
+                      description: PkceEnabled indicates if PKCE is required.
+                      type: boolean
+                    requiresReauthentication:
+                      description:
+                        RequiresReauthentication indicates if re-authentication
+                        is required.
+                      type: boolean
                   required:
-                    - configurableField
+                    - id
+                    - name
                   type: object
                 conditions:
                   description: Conditions of the resource.

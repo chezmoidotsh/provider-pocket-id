@@ -20,8 +20,13 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/crossplane/provider-pocketid/internal/controller/adminuser"
 	"github.com/crossplane/provider-pocketid/internal/controller/config"
-	"github.com/crossplane/provider-pocketid/internal/controller/mytype"
+	"github.com/crossplane/provider-pocketid/internal/controller/group"
+	"github.com/crossplane/provider-pocketid/internal/controller/oidcclient"
+	oidcclientgroupbinding "github.com/crossplane/provider-pocketid/internal/controller/oidcclientgroupbinding"
+	"github.com/crossplane/provider-pocketid/internal/controller/user"
+	"github.com/crossplane/provider-pocketid/internal/controller/usergroupbinding"
 )
 
 // Setup creates all PocketId controllers with the supplied logger and adds them to
@@ -29,7 +34,12 @@ import (
 func Setup(mgr ctrl.Manager, o controller.Options) error {
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
 		config.Setup,
-		mytype.Setup,
+		user.Setup,
+		adminuser.Setup,
+		group.Setup,
+		oidcclient.Setup,
+		usergroupbinding.Setup,
+		oidcclientgroupbinding.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {
 			return err

@@ -27,6 +27,11 @@ import (
 
 // A ProviderConfigSpec defines the desired state of a ProviderConfig.
 type ProviderConfigSpec struct {
+	// Endpoint is the Pocket ID server endpoint.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=uri
+	Endpoint string `json:"endpoint"`
+
 	// Credentials required to authenticate to this provider.
 	Credentials ProviderCredentials `json:"credentials"`
 }
@@ -49,6 +54,7 @@ type ProviderConfigStatus struct {
 
 // A ProviderConfig configures a PocketId provider.
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="ENDPOINT",type="string",JSONPath=".spec.endpoint"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:printcolumn:name="SECRET-NAME",type="string",JSONPath=".spec.credentials.secretRef.name",priority=1
 // +kubebuilder:resource:scope=Cluster
@@ -72,7 +78,7 @@ type ProviderConfigList struct {
 // ProviderConfig type metadata.
 var (
 	ProviderConfigKind             = reflect.TypeOf(ProviderConfig{}).Name()
-	ProviderConfigGroupKind        = schema.GroupKind{Group: Group, Kind: ProviderConfigKind}.String()
+	ProviderConfigGroupKind        = schema.GroupKind{Group: CRDGroup, Kind: ProviderConfigKind}.String()
 	ProviderConfigKindAPIVersion   = ProviderConfigKind + "." + SchemeGroupVersion.String()
 	ProviderConfigGroupVersionKind = SchemeGroupVersion.WithKind(ProviderConfigKind)
 )

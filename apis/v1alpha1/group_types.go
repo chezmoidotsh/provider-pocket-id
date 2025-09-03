@@ -27,18 +27,37 @@ import (
 
 // GroupParameters are the configurable fields of a Group.
 type GroupParameters struct {
-	FriendlyName string            `json:"friendlyName"`
-	Name         string            `json:"name"`
-	CustomClaims map[string]string `json:"customClaims,omitempty"`
+	// Name is the unique identifier for the group.
+	// This is used internally and must be unique within Pocket ID.
+	Name string `json:"name"`
+
+	// FriendlyName is the display name for the group.
+	// This is shown to users and administrators in the Pocket ID interface.
+	FriendlyName string `json:"friendlyName"`
+
+	// CustomClaims are additional key-value pairs that will be included in JWT tokens
+	// for users who belong to this group. These can be used to pass custom
+	// information to OIDC clients based on group membership.
+	// +optional
+	CustomClaims map[string]string `json:"customClaims"`
 }
 
 // GroupObservation are the observable fields of a Group.
 type GroupObservation struct {
-	CreatedAt    string            `json:"createdAt,omitempty"`
+	// ID is the unique identifier of the group in Pocket ID.
+	ID string `json:"id"`
+
+	// Name is the group's unique name.
+	Name string `json:"name"`
+
+	// FriendlyName is the group's display name.
+	FriendlyName string `json:"friendlyName"`
+
+	// CreatedAt is the timestamp when the group was created.
+	CreatedAt string `json:"createdAt,omitempty"`
+
+	// CustomClaims are the custom key-value pairs included in JWT tokens for group members.
 	CustomClaims map[string]string `json:"customClaims,omitempty"`
-	FriendlyName string            `json:"friendlyName"`
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
 }
 
 // A GroupSpec defines the desired state of a Group.
@@ -55,10 +74,15 @@ type GroupStatus struct {
 
 // +kubebuilder:object:root=true
 
-// A Group is an example API type.
+// A Group represents a collection of users in Pocket ID.
+// Groups are used to organize users and control access to OIDC applications.
+// Users can be added to groups via UserGroupBinding resources, and groups
+// can be associated with OIDC clients via OIDCClientGroupBinding resources
+// to restrict application access based on group membership.
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
-// +kubebuilder:printcolumn:name="EXTERNAL-NAME",type="string",JSONPath=".metadata.annotations.crossplane\\.io/external-name"
+// +kubebuilder:printcolumn:name="GROUP-NAME",type="string",JSONPath=".status.atProvider.name"
+// +kubebuilder:printcolumn:name="FRIENDLY-NAME",type="string",JSONPath=".status.atProvider.friendlyName"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,managed,pocketid}
@@ -82,7 +106,7 @@ type GroupList struct {
 // Group type metadata.
 var (
 	GroupKind             = reflect.TypeOf(Group{}).Name()
-	GroupGroupKind        = schema.GroupKind{Group: Group, Kind: GroupKind}.String()
+	GroupGroupKind        = schema.GroupKind{Group: CRDGroup, Kind: GroupKind}.String()
 	GroupKindAPIVersion   = GroupKind + "." + SchemeGroupVersion.String()
 	GroupGroupVersionKind = SchemeGroupVersion.WithKind(GroupKind)
 )

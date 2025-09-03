@@ -15,6 +15,9 @@ spec:
   scope: Cluster
   versions:
     - additionalPrinterColumns:
+        - jsonPath: .spec.endpoint
+          name: ENDPOINT
+          type: string
         - jsonPath: .metadata.creationTimestamp
           name: AGE
           type: date
@@ -103,8 +106,13 @@ spec:
                   required:
                     - source
                   type: object
+                endpoint:
+                  description: Endpoint is the Pocket ID server endpoint.
+                  format: uri
+                  type: string
               required:
                 - credentials
+                - endpoint
               type: object
             status:
               description: A ProviderConfigStatus reflects the observed state of a ProviderConfig.

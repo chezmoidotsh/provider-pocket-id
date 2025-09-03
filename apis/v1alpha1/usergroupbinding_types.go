@@ -27,19 +27,42 @@ import (
 
 // UserGroupBindingParameters are the configurable fields of a UserGroupBinding.
 type UserGroupBindingParameters struct {
-	GroupId         string          `json:"groupId,omitempty"`
-	GroupIdRef      *xpv1.Reference `json:"groupIdRef,omitempty"`
-	GroupIdSelector *xpv1.Selector  `json:"groupIdSelector,omitempty"`
+	// UserID is the ID of the user to add to a group.
+	// The user must already exist in Pocket ID.
+	// +optional
+	UserID string `json:"userId"`
 
-	UserId         string          `json:"userId,omitempty"`
-	UserIdRef      *xpv1.Reference `json:"userIdRef,omitempty"`
-	UserIdSelector *xpv1.Selector  `json:"userIdSelector,omitempty"`
+	// UserIDRef is a reference to a User resource to add to a group.
+	// This creates a dependency on the referenced User resource.
+	// +optional
+	UserIDRef *xpv1.Reference `json:"userIdRef"`
+
+	// UserIDSelector selects a User resource to add to a group.
+	// +optional
+	UserIDSelector *xpv1.Selector `json:"userIdSelector"`
+
+	// GroupID is the ID of the group to add the user to.
+	// The group must already exist in Pocket ID.
+	// +optional
+	GroupID string `json:"groupId"`
+
+	// GroupIDRef is a reference to a Group resource to add the user to.
+	// This creates a dependency on the referenced Group resource.
+	// +optional
+	GroupIDRef *xpv1.Reference `json:"groupIdRef"`
+
+	// GroupIDSelector selects a Group resource to add the user to.
+	// +optional
+	GroupIDSelector *xpv1.Selector `json:"groupIdSelector"`
 }
 
 // UserGroupBindingObservation are the observable fields of a UserGroupBinding.
 type UserGroupBindingObservation struct {
-	GroupId string `json:"groupId"`
-	UserId  string `json:"userId"`
+	// User contains the full user information.
+	User UserObservation `json:"user"`
+
+	// Group contains the full group information.
+	Group GroupObservation `json:"group"`
 }
 
 // A UserGroupBindingSpec defines the desired state of a UserGroupBinding.
@@ -56,10 +79,14 @@ type UserGroupBindingStatus struct {
 
 // +kubebuilder:object:root=true
 
-// A UserGroupBinding is an example API type.
+// A UserGroupBinding adds a user to a group in Pocket ID.
+// Groups are used to organize users and control access to OIDC applications.
+// Users can belong to multiple groups, and groups can be used in OIDC client
+// configurations to restrict access based on group membership.
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
-// +kubebuilder:printcolumn:name="EXTERNAL-NAME",type="string",JSONPath=".metadata.annotations.crossplane\\.io/external-name"
+// +kubebuilder:printcolumn:name="USERNAME",type="string",JSONPath=".status.atProvider.user.username"
+// +kubebuilder:printcolumn:name="GROUP-NAME",type="string",JSONPath=".status.atProvider.group.name"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,managed,pocketid}
@@ -83,7 +110,7 @@ type UserGroupBindingList struct {
 // UserGroupBinding type metadata.
 var (
 	UserGroupBindingKind             = reflect.TypeOf(UserGroupBinding{}).Name()
-	UserGroupBindingGroupKind        = schema.GroupKind{Group: Group, Kind: UserGroupBindingKind}.String()
+	UserGroupBindingGroupKind        = schema.GroupKind{Group: CRDGroup, Kind: UserGroupBindingKind}.String()
 	UserGroupBindingKindAPIVersion   = UserGroupBindingKind + "." + SchemeGroupVersion.String()
 	UserGroupBindingGroupVersionKind = SchemeGroupVersion.WithKind(UserGroupBindingKind)
 )

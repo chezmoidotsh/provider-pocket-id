@@ -12,13 +12,13 @@ GO111MODULE = "on"
 # -----------------------------------------------------------------------------
 # Go Development
 # -----------------------------------------------------------------------------
-go = "1.23" # Go version as specified in go.mod
+go = "1.24" # Go version as specified in go.mod
 
 # -----------------------------------------------------------------------------
 # Kubernetes Tools  
 # -----------------------------------------------------------------------------
 kubectl = "latest" # Kubernetes CLI for managing clusters
-kind = "latest"    # Local Kubernetes clusters for testing
+kind = "latest"
 helm = "latest"    # Package manager for Kubernetes
 
 # -----------------------------------------------------------------------------
