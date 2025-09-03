@@ -27,13 +27,19 @@ import (
 
 // ClientGroupBindingParameters are the configurable fields of a ClientGroupBinding.
 type ClientGroupBindingParameters struct {
-	ConfigurableField string `json:"configurableField"`
+	ClientId         string         `json:"clientId,omitempty"`
+	ClientIdRef      xpv1.Reference `json:"clientIdRef"`
+	ClientIdSelector *xpv1.Selector `json:"clientIdSelector,omitempty"`
+
+	GroupId         string          `json:"groupId,omitempty"`
+	GroupIdRef      *xpv1.Reference `json:"groupIdRef,omitempty"`
+	GroupIdSelector *xpv1.Selector  `json:"groupIdSelector,omitempty"`
 }
 
 // ClientGroupBindingObservation are the observable fields of a ClientGroupBinding.
 type ClientGroupBindingObservation struct {
-	ConfigurableField string `json:"configurableField"`
-	ObservableField   string `json:"observableField,omitempty"`
+	ClientId string `json:"clientId"`
+	GroupId  string `json:"groupId"`
 }
 
 // A ClientGroupBindingSpec defines the desired state of a ClientGroupBinding.

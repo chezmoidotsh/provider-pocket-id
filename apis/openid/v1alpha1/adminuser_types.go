@@ -25,68 +25,40 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
-// GroupParameters are the configurable fields of a Group.
-type GroupParameters struct {
-	FriendlyName string            `json:"friendlyName"`
-	Name         string            `json:"name"`
-	CustomClaims map[string]string `json:"customClaims,omitempty"`
-}
-
-// GroupObservation are the observable fields of a Group.
-type GroupObservation struct {
-	CreatedAt    string            `json:"createdAt,omitempty"`
-	CustomClaims map[string]string `json:"customClaims,omitempty"`
-	FriendlyName string            `json:"friendlyName"`
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-}
-
-// A GroupSpec defines the desired state of a Group.
-type GroupSpec struct {
-	xpv1.ResourceSpec `json:",inline"`
-	ForProvider       GroupParameters `json:"forProvider"`
-}
-
-// A GroupStatus represents the observed state of a Group.
-type GroupStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
-	AtProvider          GroupObservation `json:"atProvider,omitempty"`
-}
-
 // +kubebuilder:object:root=true
 
-// A Group is an example API type.
+// A AdminUser is an example API type.
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="EXTERNAL-NAME",type="string",JSONPath=".metadata.annotations.crossplane\\.io/external-name"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,categories={crossplane,managed,pocketid}
-type Group struct {
+type AdminUser struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GroupSpec   `json:"spec"`
-	Status GroupStatus `json:"status,omitempty"`
+	Spec   UserSpec   `json:"spec"`
+	Status UserStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// GroupList contains a list of Group
-type GroupList struct {
+// AdminUserList contains a list of AdminUser
+type AdminUserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Group `json:"items"`
+	Items           []AdminUser `json:"items"`
 }
 
-// Group type metadata.
+// AdminUser type metadata.
 var (
-	GroupKind             = reflect.TypeOf(Group{}).Name()
-	GroupGroupKind        = schema.GroupKind{Group: Group, Kind: GroupKind}.String()
-	GroupKindAPIVersion   = GroupKind + "." + SchemeGroupVersion.String()
-	GroupGroupVersionKind = SchemeGroupVersion.WithKind(GroupKind)
+	AdminUserKind             = reflect.TypeOf(AdminUser{}).Name()
+	AdminUserGroupKind        = schema.GroupKind{Group: Group, Kind: AdminUserKind}.String()
+	AdminUserKindAPIVersion   = AdminUserKind + "." + SchemeGroupVersion.String()
+	AdminUserGroupVersionKind = SchemeGroupVersion.WithKind(AdminUserKind)
 )
 
 func init() {
-	SchemeBuilder.Register(&Group{}, &GroupList{})
+	SchemeBuilder.Register(&AdminUser{}, &AdminUserList{})
 }

@@ -31,7 +31,6 @@ type UserParameters struct {
 	Disabled     bool              `json:"disabled,omitempty"`
 	Email        string            `json:"email"`
 	FirstName    string            `json:"firstName"`
-	IsAdmin      bool              `json:"isAdmin,omitempty"`
 	LastName     string            `json:"lastName,omitempty"`
 	Locale       string            `json:"locale,omitempty"`
 	Username     string            `json:"username"`
@@ -41,14 +40,14 @@ type UserParameters struct {
 type UserObservation struct {
 	CustomClaims map[string]string `json:"customClaims,omitempty"`
 	Disabled     bool              `json:"disabled,omitempty"`
-	Email        string            `json:"email,omitempty"`
-	FirstName    string            `json:"firstName,omitempty"`
-	ID           string            `json:"id,omitempty"`
+	Email        string            `json:"email"`
+	FirstName    string            `json:"firstName"`
+	ID           string            `json:"id"`
 	IsAdmin      bool              `json:"isAdmin,omitempty"`
 	LastName     string            `json:"lastName,omitempty"`
 	Locale       string            `json:"locale,omitempty"`
 	UserGroups   []string          `json:"userGroups,omitempty,omitempty"`
-	Username     string            `json:"username,omitempty"`
+	Username     string            `json:"username"`
 }
 
 // A UserSpec defines the desired state of a User.

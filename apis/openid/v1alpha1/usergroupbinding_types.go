@@ -27,13 +27,19 @@ import (
 
 // UserGroupBindingParameters are the configurable fields of a UserGroupBinding.
 type UserGroupBindingParameters struct {
-	ConfigurableField string `json:"configurableField"`
+	GroupId         string          `json:"groupId,omitempty"`
+	GroupIdRef      *xpv1.Reference `json:"groupIdRef,omitempty"`
+	GroupIdSelector *xpv1.Selector  `json:"groupIdSelector,omitempty"`
+
+	UserId         string          `json:"userId,omitempty"`
+	UserIdRef      *xpv1.Reference `json:"userIdRef,omitempty"`
+	UserIdSelector *xpv1.Selector  `json:"userIdSelector,omitempty"`
 }
 
 // UserGroupBindingObservation are the observable fields of a UserGroupBinding.
 type UserGroupBindingObservation struct {
-	ConfigurableField string `json:"configurableField"`
-	ObservableField   string `json:"observableField,omitempty"`
+	GroupId string `json:"groupId"`
+	UserId  string `json:"userId"`
 }
 
 // A UserGroupBindingSpec defines the desired state of a UserGroupBinding.
