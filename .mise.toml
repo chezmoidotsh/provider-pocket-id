@@ -1,0 +1,28 @@
+# =============================================================================
+# Crossplane Provider Development Environment
+# =============================================================================
+# Minimal mise configuration for developing a Crossplane provider.
+# Includes only the essential tools needed for Go development and Kubernetes.
+
+[env]
+# Standard Go environment
+GO111MODULE = "on"
+
+[tools]
+# -----------------------------------------------------------------------------
+# Go Development
+# -----------------------------------------------------------------------------
+go = "1.23" # Go version as specified in go.mod
+
+# -----------------------------------------------------------------------------
+# Kubernetes Tools  
+# -----------------------------------------------------------------------------
+kubectl = "latest" # Kubernetes CLI for managing clusters
+kind = "latest"    # Local Kubernetes clusters for testing
+helm = "latest"    # Package manager for Kubernetes
+
+# -----------------------------------------------------------------------------
+# Development Tools
+# -----------------------------------------------------------------------------
+golangci-lint = "latest"           # Go linter for code quality
+"npm:@trunkio/launcher" = "latest"
