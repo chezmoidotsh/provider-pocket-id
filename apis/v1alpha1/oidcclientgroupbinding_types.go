@@ -26,6 +26,8 @@ import (
 )
 
 // OIDCClientGroupBindingParameters are the configurable fields of an OIDCClientGroupBinding.
+// +kubebuilder:validation:XValidation:rule="(has(self.clientId) ? 1 : 0) + (self.clientIdRef != null ? 1 : 0) + (self.clientIdSelector != null ? 1 : 0) == 1",message="Exactly one of clientId, clientIdRef or clientIdSelector must be specified."
+// +kubebuilder:validation:XValidation:rule="(has(self.groupId) ? 1 : 0) + (self.groupIdRef != null ? 1 : 0) + (self.groupIdSelector != null ? 1 : 0) == 1",message="Exactly one of groupId, groupIdRef or groupIdSelector must be specified."
 type OIDCClientGroupBindingParameters struct {
 	// ClientID is the ID of the OIDC client to bind to a group.
 	// The client must already exist in Pocket ID.
@@ -44,6 +46,7 @@ type OIDCClientGroupBindingParameters struct {
 	// GroupID is the ID of the group to bind the OIDC client to.
 	// The group must already exist in Pocket ID.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
 	GroupID string `json:"groupId"`
 
 	// GroupIDRef is a reference to a Group resource to bind the client to.

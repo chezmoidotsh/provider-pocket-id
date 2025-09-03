@@ -29,13 +29,16 @@ import (
 type UserParameters struct {
 	// Username is the unique username for the user account.
 	// This is used for identification and must be unique within Pocket ID.
+	// +kubebuilder:validation:Required
 	Username string `json:"username"`
 
 	// Email is the user's email address.
 	// This is required for authentication and communication purposes.
+	// +kubebuilder:validation:Required
 	Email string `json:"email"`
 
 	// FirstName is the user's given name.
+	// +kubebuilder:validation:Required
 	FirstName string `json:"firstName"`
 
 	// LastName is the user's family name.

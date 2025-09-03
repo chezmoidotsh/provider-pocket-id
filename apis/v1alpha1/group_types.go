@@ -29,10 +29,12 @@ import (
 type GroupParameters struct {
 	// Name is the unique identifier for the group.
 	// This is used internally and must be unique within Pocket ID.
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 
 	// FriendlyName is the display name for the group.
 	// This is shown to users and administrators in the Pocket ID interface.
+	// +kubebuilder:validation:Required
 	FriendlyName string `json:"friendlyName"`
 
 	// CustomClaims are additional key-value pairs that will be included in JWT tokens

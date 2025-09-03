@@ -251,6 +251,19 @@ spec:
                           type: object
                       type: object
                   type: object
+                  x-kubernetes-validations:
+                    - message:
+                        Exactly one of userId, userIdRef or userIdSelector must
+                        be specified.
+                      rule:
+                        "(has(self.userId) ? 1 : 0) + (self.userIdRef != null ? 1
+                        : 0) + (self.userIdSelector != null ? 1 : 0) == 1"
+                    - message:
+                        Exactly one of groupId, groupIdRef or groupIdSelector must
+                        be specified.
+                      rule:
+                        "(has(self.groupId) ? 1 : 0) + (self.groupIdRef != null ?
+                        1 : 0) + (self.groupIdSelector != null ? 1 : 0) == 1"
                 managementPolicies:
                   default:
                     - "*"

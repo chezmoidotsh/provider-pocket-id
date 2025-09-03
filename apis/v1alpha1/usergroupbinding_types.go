@@ -26,6 +26,8 @@ import (
 )
 
 // UserGroupBindingParameters are the configurable fields of a UserGroupBinding.
+// +kubebuilder:validation:XValidation:rule="(has(self.userId) ? 1 : 0) + (self.userIdRef != null ? 1 : 0) + (self.userIdSelector != null ? 1 : 0) == 1",message="Exactly one of userId, userIdRef or userIdSelector must be specified."
+// +kubebuilder:validation:XValidation:rule="(has(self.groupId) ? 1 : 0) + (self.groupIdRef != null ? 1 : 0) + (self.groupIdSelector != null ? 1 : 0) == 1",message="Exactly one of groupId, groupIdRef or groupIdSelector must be specified."
 type UserGroupBindingParameters struct {
 	// UserID is the ID of the user to add to a group.
 	// The user must already exist in Pocket ID.

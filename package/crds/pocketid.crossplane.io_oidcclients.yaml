@@ -89,7 +89,9 @@ spec:
                         CallbackURLs are the allowed redirect URIs after successful authentication.
                         These must be exact matches for security purposes.
                       items:
+                        format: uri
                         type: string
+                      minItems: 1
                       type: array
                     credentials:
                       description:
@@ -151,6 +153,7 @@ spec:
                         LogoURL is the URL to an image file that will be used as the client's logo.
                         The provider will download this image and upload it to Pocket ID.
                         Supported formats: PNG, JPEG, GIF, SVG. Maximum size: 2MB.
+                      format: uri
                       type: string
                     logoutCallbackURLs:
                       description:

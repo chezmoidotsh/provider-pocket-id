@@ -29,6 +29,7 @@ import (
 type OIDCClientParameters struct {
 	// Name is the display name of the OIDC client application.
 	// This is shown to users during the authentication flow.
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 
 	// ID is the client identifier for OIDC. If not specified, a UUID will be generated.
@@ -37,6 +38,9 @@ type OIDCClientParameters struct {
 
 	// CallbackURLs are the allowed redirect URIs after successful authentication.
 	// These must be exact matches for security purposes.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:Format=uri
 	CallbackURLs []string `json:"callbackURLs"`
 
 	// LogoutCallbackURLs are the allowed redirect URIs after logout.
@@ -65,6 +69,7 @@ type OIDCClientParameters struct {
 	// The provider will download this image and upload it to Pocket ID.
 	// Supported formats: PNG, JPEG, GIF, SVG. Maximum size: 2MB.
 	// +optional
+	// +kubebuilder:validation:Format=uri
 	LogoURL string `json:"logoUrl"`
 
 	// Credentials configure federated client authentication methods.

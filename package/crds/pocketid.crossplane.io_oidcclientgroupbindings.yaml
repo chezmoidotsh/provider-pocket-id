@@ -172,6 +172,7 @@ spec:
                       description: |-
                         GroupID is the ID of the group to bind the OIDC client to.
                         The group must already exist in Pocket ID.
+                      minLength: 1
                       type: string
                     groupIdRef:
                       description: |-
@@ -253,6 +254,19 @@ spec:
                           type: object
                       type: object
                   type: object
+                  x-kubernetes-validations:
+                    - message:
+                        Exactly one of clientId, clientIdRef or clientIdSelector
+                        must be specified.
+                      rule:
+                        "(has(self.clientId) ? 1 : 0) + (self.clientIdRef != null
+                        ? 1 : 0) + (self.clientIdSelector != null ? 1 : 0) == 1"
+                    - message:
+                        Exactly one of groupId, groupIdRef or groupIdSelector must
+                        be specified.
+                      rule:
+                        "(has(self.groupId) ? 1 : 0) + (self.groupIdRef != null ?
+                        1 : 0) + (self.groupIdSelector != null ? 1 : 0) == 1"
                 managementPolicies:
                   default:
                     - "*"

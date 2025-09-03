@@ -18,7 +18,6 @@ package adminuser
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
 
@@ -27,15 +26,18 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/connection"
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/pkg/event"
+	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/pkg/statemetrics"
 
 	apisv1alpha1 "github.com/crossplane/provider-pocketid/apis/v1alpha1"
+	"github.com/crossplane/provider-pocketid/internal/clients/pocketid"
 	"github.com/crossplane/provider-pocketid/internal/features"
 )
 
@@ -48,11 +50,11 @@ const (
 	errNewClient = "cannot create new Service"
 )
 
-// A NoOpService does nothing.
-type NoOpService struct{}
-
+// newPocketIDService creates a new Pocket ID service
 var (
-	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
+	newPocketIDService = func(endpoint string, creds []byte) (interface{}, error) {
+		return pocketid.NewClientFromCredentials(endpoint, string(creds))
+	}
 )
 
 // Setup adds a controller that reconciles AdminUser managed resources.
@@ -68,7 +70,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		managed.WithExternalConnecter(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: newNoOpService}),
+			newServiceFn: newPocketIDService}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
@@ -108,7 +110,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 type connector struct {
 	kube         client.Client
 	usage        resource.Tracker
-	newServiceFn func(creds []byte) (interface{}, error)
+	newServiceFn func(endpoint string, creds []byte) (interface{}, error)
 }
 
 // Connect typically produces an ExternalClient by:
@@ -137,20 +139,18 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errGetCreds)
 	}
 
-	svc, err := c.newServiceFn(data)
+	svc, err := c.newServiceFn(pc.Spec.Endpoint, data)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
 	}
 
-	return &external{service: svc}, nil
+	return &external{service: svc.(*pocketid.Client)}, nil
 }
 
 // An ExternalClient observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
-	// A 'client' used to connect to the external resource API. In practice this
-	// would be something like an AWS SDK client.
-	service interface{}
+	service *pocketid.Client
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
@@ -159,23 +159,55 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotAdminUser)
 	}
 
-	// These fmt statements should be removed in the real implementation.
-	fmt.Printf("Observing: %+v", cr)
+	// Use external-name annotation if present, otherwise use username
+	externalName := meta.GetExternalName(cr)
+	if externalName == "" {
+		externalName = cr.Spec.ForProvider.Username
+	}
+
+	user, err := c.service.GetUserByExternalName(ctx, externalName)
+	if err != nil {
+		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get admin user")
+	}
+
+	if user == nil {
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	// Ensure this user is actually an admin
+	if !user.IsAdmin {
+		return managed.ExternalObservation{}, errors.New("user exists but is not an admin user")
+	}
+
+	// Update status with observed values
+	cr.Status.AtProvider = apisv1alpha1.AdminUserObservation{
+		ID:           user.ID,
+		Username:     user.Username,
+		Email:        user.Email,
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		Locale:       user.Locale,
+		Disabled:     user.Disabled,
+		IsAdmin:      user.IsAdmin,
+		UserGroups:   user.UserGroups,
+		CustomClaims: user.CustomClaims,
+	}
+
+	// Set external name to username if not already set
+	if meta.GetExternalName(cr) == "" {
+		meta.SetExternalName(cr, user.Username)
+	}
+
+	// Check if resource is up to date
+	upToDate := isAdminUserUpToDate(cr.Spec.ForProvider, *user)
+
+	cr.Status.SetConditions(xpv1.Available())
 
 	return managed.ExternalObservation{
-		// Return false when the external resource does not exist. This lets
-		// the managed resource reconciler know that it needs to call Create to
-		// (re)create the resource, or that it has successfully been deleted.
-		ResourceExists: true,
-
-		// Return false when the external resource exists, but it not up to date
-		// with the desired managed resource state. This lets the managed
-		// resource reconciler know that it needs to call Update.
-		ResourceUpToDate: true,
-
-		// Return any details that may be required to connect to the external
-		// resource. These will be stored as the connection secret.
-		ConnectionDetails: managed.ConnectionDetails{},
+		ResourceExists:   true,
+		ResourceUpToDate: upToDate,
 	}, nil
 }
 
@@ -185,13 +217,26 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalCreation{}, errors.New(errNotAdminUser)
 	}
 
-	fmt.Printf("Creating: %+v", cr)
+	req := pocketid.CreateUserRequest{
+		Username:     cr.Spec.ForProvider.Username,
+		Email:        cr.Spec.ForProvider.Email,
+		FirstName:    cr.Spec.ForProvider.FirstName,
+		LastName:     cr.Spec.ForProvider.LastName,
+		Locale:       cr.Spec.ForProvider.Locale,
+		Disabled:     cr.Spec.ForProvider.Disabled,
+		IsAdmin:      true, // AdminUser resources create admin users
+		CustomClaims: cr.Spec.ForProvider.CustomClaims,
+	}
 
-	return managed.ExternalCreation{
-		// Optionally return any details that may be required to connect to the
-		// external resource. These will be stored as the connection secret.
-		ConnectionDetails: managed.ConnectionDetails{},
-	}, nil
+	user, err := c.service.CreateUser(ctx, req)
+	if err != nil {
+		return managed.ExternalCreation{}, errors.Wrap(err, "failed to create admin user")
+	}
+
+	// Set external name to username
+	meta.SetExternalName(cr, user.Username)
+
+	return managed.ExternalCreation{}, nil
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
@@ -200,13 +245,26 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New(errNotAdminUser)
 	}
 
-	fmt.Printf("Updating: %+v", cr)
+	if cr.Status.AtProvider.ID == "" {
+		return managed.ExternalUpdate{}, errors.New("admin user ID not found in status")
+	}
 
-	return managed.ExternalUpdate{
-		// Optionally return any details that may be required to connect to the
-		// external resource. These will be stored as the connection secret.
-		ConnectionDetails: managed.ConnectionDetails{},
-	}, nil
+	req := pocketid.UpdateUserRequest{
+		Username:     cr.Spec.ForProvider.Username,
+		Email:        cr.Spec.ForProvider.Email,
+		FirstName:    cr.Spec.ForProvider.FirstName,
+		LastName:     cr.Spec.ForProvider.LastName,
+		Locale:       cr.Spec.ForProvider.Locale,
+		Disabled:     cr.Spec.ForProvider.Disabled,
+		CustomClaims: cr.Spec.ForProvider.CustomClaims,
+	}
+
+	_, err := c.service.UpdateUser(ctx, cr.Status.AtProvider.ID, req)
+	if err != nil {
+		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update admin user")
+	}
+
+	return managed.ExternalUpdate{}, nil
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
@@ -215,11 +273,52 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, errors.New(errNotAdminUser)
 	}
 
-	fmt.Printf("Deleting: %+v", cr)
+	if cr.Status.AtProvider.ID != "" {
+		err := c.service.DeleteUser(ctx, cr.Status.AtProvider.ID)
+		if err != nil {
+			return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete admin user")
+		}
+	}
 
 	return managed.ExternalDelete{}, nil
 }
 
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
+}
+
+// isAdminUserUpToDate compares the desired spec with the actual admin user state
+//
+//nolint:gocyclo
+func isAdminUserUpToDate(spec apisv1alpha1.AdminUserParameters, user pocketid.User) bool {
+	if spec.Username != user.Username {
+		return false
+	}
+	if spec.Email != user.Email {
+		return false
+	}
+	if spec.FirstName != user.FirstName {
+		return false
+	}
+	if spec.LastName != user.LastName {
+		return false
+	}
+	if spec.Locale != user.Locale {
+		return false
+	}
+	if spec.Disabled != user.Disabled {
+		return false
+	}
+
+	// Compare custom claims
+	if len(spec.CustomClaims) != len(user.CustomClaims) {
+		return false
+	}
+	for k, v := range spec.CustomClaims {
+		if userVal, exists := user.CustomClaims[k]; !exists || userVal != v {
+			return false
+		}
+	}
+
+	return true
 }
